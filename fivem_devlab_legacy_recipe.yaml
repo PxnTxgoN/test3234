@@ -1,0 +1,91 @@
+$engine: 3
+$onesync: on
+
+name: FiveM DevLab Legacy
+version: 1.0.0
+author: ChatGPT
+description: Lightweight FiveM Legacy development server for vehicle, MLO, mapping and resource testing. No RP framework or database required.
+
+tasks:
+  # CFX default resources
+  - action: download_github
+    src: https://github.com/citizenfx/cfx-server-data
+    ref: master
+    subpath: resources
+    dest: ./resources
+
+  # Use the built-in system chat instead of the old chat resource
+  - action: remove_path
+    path: ./resources/[gameplay]/chat
+
+  # vMenu Enhanced for FiveM Legacy (pinned release)
+  - action: download_file
+    url: https://github.com/TomGrobbe/vMenu/releases/download/enhanced-v1.0.22/vMenu-Enhanced-Legacy-v1.0.22.zip
+    path: ./tmp/vmenu-legacy.zip
+
+  - action: unzip
+    src: ./tmp/vmenu-legacy.zip
+    dest: ./resources/[vmenu]
+
+  # ox_lib: common library dependency for many development resources
+  - action: download_file
+    url: https://github.com/CommunityOx/ox_lib/releases/latest/download/ox_lib.zip
+    path: ./tmp/ox_lib.zip
+
+  - action: unzip
+    src: ./tmp/ox_lib.zip
+    dest: ./resources/[ox]
+
+  # IPL controls for testing vanilla GTA interiors and map IPLs
+  - action: download_github
+    src: https://github.com/Bob74/bob74_ipl
+    ref: master
+    dest: ./resources/[mapping]/bob74_ipl
+
+  # Screenshot helper, useful for reporting visual bugs to the dev team
+  - action: download_github
+    src: https://github.com/citizenfx/screenshot-basic
+    ref: master
+    dest: ./resources/[dev]/screenshot-basic
+
+  # Create a minimal server configuration
+  - action: write_file
+    file: ./server.cfg
+    data: |
+      # FiveM DevLab - Legacy
+      sv_licenseKey "{{svLicense}}"
+      sv_maxclients {{maxClients}}
+      {{serverEndpoints}}
+
+      set resources_useSystemChat true
+      set onesync on
+
+      # Base resources
+      ensure mapmanager
+      ensure chat
+      ensure spawnmanager
+      ensure basic-gamemode
+      ensure hardcap
+
+      # Libraries and development helpers
+      ensure ox_lib
+      ensure bob74_ipl
+      ensure screenshot-basic
+
+      # vMenu Enhanced - folder name must remain vMenu.Enhanced
+      exec @vMenu.Enhanced/config/permissions.cfg
+      exec @vMenu.Enhanced/config/configuration.cfg
+      add_filesystem_permission vMenu.Enhanced write vMenu.Enhanced
+      ensure vMenu.Enhanced
+
+      # txAdmin administrators receive command permissions.
+      # Add each developer in txAdmin Admin Manager, then grant matching vMenu permissions
+      # in resources/[vmenu]/vMenu.Enhanced/config/permissions.cfg.
+
+      add_ace group.admin command allow
+      add_ace group.admin command.quit deny
+      set steam_webApiKey "none"
+
+  # Remove temporary downloads
+  - action: remove_path
+    path: ./tmp
